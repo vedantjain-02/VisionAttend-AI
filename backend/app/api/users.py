@@ -5,6 +5,7 @@ from app.dependencies.database import get_db
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate
+from app.services.face_registration_service import FaceRegistrationService
 
 router = APIRouter(
     prefix="/users",
@@ -43,3 +44,13 @@ def register(
     return {
         "message": "Employee created successfully."
     }
+
+@router.post("/{employee_id}/register-face")
+def register_face(
+    employee_id: str,
+    db: Session = Depends(get_db)
+):
+
+    service = FaceRegistrationService(db)
+
+    return service.register_face(employee_id)

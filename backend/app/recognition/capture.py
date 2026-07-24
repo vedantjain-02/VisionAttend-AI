@@ -5,18 +5,19 @@ import time
 
 class FaceCapture:
 
-    def __init__(self, save_path, detector):
+    def __init__(self, detector):
 
-        self.save_path = save_path
         self.detector = detector
+
+
+
+    def capture_faces(self,save_path : str, count=20):
+        self.save_path = save_path
 
         os.makedirs(
             self.save_path,
             exist_ok=True
         )
-
-
-    def capture_faces(self, count=20):
 
         captured_faces = []
         camera = cv2.VideoCapture(0)
@@ -62,7 +63,12 @@ class FaceCapture:
                     saved = cv2.imwrite(filename, face_img)
 
                     print("Saved:", saved)
-                    captured_faces.append(face_img.copy())
+                    captured_faces.append(
+                        {
+                            "image": face_img.copy(),
+                            "embedding": face.embedding.copy()
+                        }
+                    )
 
                     if saved:
                         captured += 1
