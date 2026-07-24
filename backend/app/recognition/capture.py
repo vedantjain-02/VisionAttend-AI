@@ -18,6 +18,7 @@ class FaceCapture:
 
     def capture_faces(self, count=20):
 
+        captured_faces = []
         camera = cv2.VideoCapture(0)
 
         captured = 0
@@ -61,6 +62,7 @@ class FaceCapture:
                     saved = cv2.imwrite(filename, face_img)
 
                     print("Saved:", saved)
+                    captured_faces.append(face_img.copy())
 
                     if saved:
                         captured += 1
@@ -102,3 +104,6 @@ class FaceCapture:
 
         camera.release()
         cv2.destroyAllWindows()
+
+
+        return captured_faces
