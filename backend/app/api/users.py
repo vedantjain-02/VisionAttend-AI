@@ -54,3 +54,30 @@ def register_face(
     service = FaceRegistrationService(db)
 
     return service.register_face(employee_id)
+
+
+@router.get("")
+def get_users(
+    db: Session = Depends(get_db)
+):
+    repository = UserRepository(db)
+
+    users = repository.get_all()
+
+    return {
+        "data": [
+            {
+                "employee_id": user.employee_id,
+                "name": user.full_name,
+                "email": user.email,
+                "face_registered": bool(user.face_embedding),
+                "created_at": "",
+                "updated_at": ""
+            }
+            for user in users
+        ],
+        "total": len(users),
+        "page": 1,
+        "per_page": len(users),
+        "total_pages": 1
+    }
