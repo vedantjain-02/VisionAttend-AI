@@ -1,12 +1,18 @@
 export const API_BASE_URL = "http://127.0.0.1:8000";
 
+
 export const API_ENDPOINTS = {
   USERS: "/users",
+  REGISTER_USER: "/users/register",
+
   USER_BY_ID: (id: string) => `/users/${id}`,
   REGISTER_FACE: (id: string) => `/users/${id}/register-face`,
+
   ATTENDANCE: "/attendance",
   ATTENDANCE_TODAY: "/attendance/today",
   ATTENDANCE_HISTORY: "/attendance/history",
+  
+  LIVE_ATTENDANCE: "/attendance/live",
 } as const;
 
 export const ROUTES = {

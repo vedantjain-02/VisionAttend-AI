@@ -1,5 +1,5 @@
 "use client";
-
+import { attendanceService } from "@/services/api";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppLayout from "@/components/layout/AppLayout";
@@ -35,7 +35,9 @@ export default function LiveAttendancePage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastRecognition, setLastRecognition] = useState<RecognitionResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { logs, loading: logsLoading } = useAttendanceLogs();
   const { health } = useSystemHealth();
@@ -56,34 +58,107 @@ export default function LiveAttendancePage() {
   }, []);
 
   const stopCamera = useCallback(() => {
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+
     setIsStreaming(false);
     setIsScanning(false);
+
   }, []);
+
+  useEffect(() => {
+
+    if (!isStreaming) return;
+
+    const scan = async () => {
+
+      await recognizeFace();
+
+      timeoutRef.current = setTimeout(scan, 2000);
+
+    };
+
+    scan();
+
+    return () => {
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+    };
+
+  }, [isStreaming]);
 
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
 
-  const simulateRecognition = () => {
-    if (!isStreaming) return;
-    setIsScanning(true);
+const recognizeFace = async () => {
+  if (isScanning) return;
+  if (!videoRef.current || !canvasRef.current) return;
 
-    setTimeout(() => {
-      const mockResult: RecognitionResult = {
-        employee_id: "EMP001",
-        employee_name: "Alex Johnson",
-        confidence: 0.96,
-        status: "recognized",
-        timestamp: new Date().toISOString(),
-      };
-      setLastRecognition(mockResult);
-      setIsScanning(false);
-    }, 2000);
-  };
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return;
+
+  canvas.width = videoRef.current.videoWidth;
+  canvas.height = videoRef.current.videoHeight;
+
+  ctx.drawImage(videoRef.current, 0, 0);
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg")
+  );
+
+  if (!blob) return;
+
+  const formData = new FormData();
+  formData.append("image", blob, "frame.jpg");
+
+  setIsScanning(true);
+
+  try {
+
+    const result = await attendanceService.liveAttendance(formData);
+
+    console.log("Full Response:", result);
+    console.log("Response Data:", result.data);
+
+    if (result.data) {
+
+        setLastRecognition({
+            employee_id: result.data.employee_id,
+            employee_name: result.data.employee_name,
+            confidence: result.data.confidence ?? 1,
+            status: "recognized",
+            timestamp: new Date().toISOString(),
+        });
+
+        stopCamera();
+
+        return;
+    }
+
+  } catch (err) {
+
+    console.log(err);
+
+  } finally {
+
+    setIsScanning(false);
+
+  }
+
+};
 
   return (
     <AppLayout>
@@ -118,6 +193,10 @@ export default function LiveAttendancePage() {
                   playsInline
                   muted
                   className="w-full h-full object-cover"
+                />
+                <canvas
+                    ref={canvasRef}
+                    className="hidden"
                 />
 
                 {!isStreaming && (
@@ -169,7 +248,7 @@ export default function LiveAttendancePage() {
                           <span className="flex items-center gap-1"><Camera className="h-3 w-3" /> 1280x720</span>
                           <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Face Detection: ON</span>
                         </div>
-                        <Button variant="accent" size="sm" onClick={simulateRecognition} disabled={isScanning}>
+                        <Button variant="accent" size="sm" onClick={recognizeFace} disabled={isScanning}>
                           <Scan className="h-3.5 w-3.5" /> Detect Face
                         </Button>
                       </div>

@@ -1,53 +1,48 @@
 import os
+import cv2
+import numpy as np
 
-from app.recognition.capture import FaceCapture
-from app.recognition.detector import FaceDetector
 from app.repositories.user_repository import UserRepository
-
-from app.utils.embedding_utils import (
-    average_embeddings,
-    embedding_to_bytes
-)
+from app.recognition.detector import FaceDetector
+from app.recognition.embedder import FaceEmbedder
+from app.utils.embedding_utils import average_embeddings, embedding_to_bytes
 
 
 class FaceRegistrationService:
 
     def __init__(self, db):
-
         self.repository = UserRepository(db)
-
         self.detector = FaceDetector()
+        self.embedder = FaceEmbedder()
 
-        self.capture = FaceCapture(
-            detector=self.detector
-        )
-
-    def register_face(self, employee_id: str):
+    def register_face(self, employee_id: str, image):
 
         user = self.repository.get_by_employee_id(employee_id)
 
         if user is None:
             raise Exception("Employee not found.")
 
-        folder = os.path.join(
-            "storage",
-            "faces",
-            employee_id
+        folder = os.path.join("storage", "faces", employee_id)
+        os.makedirs(folder, exist_ok=True)
+
+        # Read image from frontend
+        image_bytes = image.file.read()
+
+        frame = cv2.imdecode(
+            np.frombuffer(image_bytes, np.uint8),
+            cv2.IMREAD_COLOR
         )
 
-        samples = self.capture.capture_faces(
-            save_path=folder,
-            count=20
-        )
+        faces = self.detector.detect(frame)
 
-        embeddings = []
+        if len(faces) == 0:
+            raise Exception("No face detected.")
 
-        for sample in samples:
-            embeddings.append(sample["embedding"])
+        face = faces[0]
 
-        average = average_embeddings(embeddings)
+        embedding = self.embedder.get_embedding(face)
 
-        user.face_embedding = embedding_to_bytes(average)
+        user.face_embedding = embedding_to_bytes(embedding)
         user.photo_folder = folder
 
         self.repository.update(user)

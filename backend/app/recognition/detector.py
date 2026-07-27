@@ -1,23 +1,15 @@
 import insightface
 from insightface.app import FaceAnalysis
 
+# Load model only once
+face_model = FaceAnalysis(name="buffalo_l")
+face_model.prepare(
+    ctx_id=-1,
+    det_size=(640, 640)
+)
+
 
 class FaceDetector:
 
-    def __init__(self):
-
-        self.model = FaceAnalysis(
-            name="buffalo_l"
-        )
-
-        self.model.prepare(
-            ctx_id=0,
-            det_size=(640, 640)
-        )
-
-
     def detect(self, frame):
-
-        faces = self.model.get(frame)
-
-        return faces
+        return face_model.get(frame)

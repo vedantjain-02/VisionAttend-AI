@@ -1,7 +1,8 @@
 import cv2
 import os
 import time
-
+import numpy as np
+from fastapi import UploadFile
 
 class FaceCapture:
 
@@ -34,11 +35,15 @@ class FaceCapture:
 
 
             faces = self.detector.detect(frame)
+            print("Faces detected:", len(faces))
 
 
             if len(faces) > 0:
 
                 face = faces[0]
+
+                print("Embedding:", face.embedding)
+                print("Embedding is None:", face.embedding is None)
 
                 box = face.bbox.astype(int)
 
@@ -63,10 +68,11 @@ class FaceCapture:
                     saved = cv2.imwrite(filename, face_img)
 
                     print("Saved:", saved)
+                    print("Embedding shape:", face.embedding.shape)
                     captured_faces.append(
                         {
                             "image": face_img.copy(),
-                            "embedding": face.embedding.copy()
+                            "face": face
                         }
                     )
 

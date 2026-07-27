@@ -9,4 +9,8 @@ class FaceEmbedder:
         Extract embedding from InsightFace face object
         """
 
-        return face.embedding.astype(np.float32)
+        embedding = face.embedding.astype(np.float32)
+
+        embedding = embedding / np.linalg.norm(embedding)
+
+        return embedding

@@ -1,5 +1,5 @@
 from datetime import date
-
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from datetime import date
 from app.models.attendance import Attendance
@@ -53,11 +53,9 @@ class AttendanceRepository:
 
 
     def get_all(self):
-
         return (
             self.db.query(Attendance)
-            .order_by(
-                Attendance.check_in.desc()
-            )
+            .options(joinedload(Attendance.user))
+            .order_by(Attendance.check_in.desc())
             .all()
         )

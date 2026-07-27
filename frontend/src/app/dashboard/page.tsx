@@ -1,6 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import {
+  useDashboardStats,
+  useTodayAttendance,
+  useSystemHealth,
+  useChartData,
+} from "@/hooks/useData";
 import AppLayout from "@/components/layout/AppLayout";
 import PageHeader from "@/components/shared/PageHeader";
 import StatisticsCard from "@/components/shared/StatisticsCard";
@@ -12,7 +18,6 @@ import {
   EmployeeGrowthChart,
   AttendancePieChart,
 } from "@/components/charts/Charts";
-import { useDashboardStats, useTodayAttendance, useSystemHealth, useChartData } from "@/hooks/useData";
 import { formatDate, getStatusColor, formatTime } from "@/lib/utils";
 import {
   Users,

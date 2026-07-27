@@ -29,7 +29,7 @@ interface FormErrors {
 
 export default function RegisterEmployeePage() {
   const { addEmployee } = useEmployees();
-  const [form, setForm] = useState({ employee_id: "", name: "", email: "" });
+  const [form, setForm] = useState({ employee_id: "", full_name: "", email: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -37,7 +37,7 @@ export default function RegisterEmployeePage() {
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
     if (!form.employee_id.trim()) newErrors.employee_id = "Employee ID is required";
-    if (!form.name.trim()) newErrors.name = "Full name is required";
+    if (!form.full_name.trim()) newErrors.name = "Full name is required";
     if (!form.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -49,12 +49,14 @@ export default function RegisterEmployeePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Register button clicked");
+    console.log(form);
     if (!validate()) return;
     setLoading(true);
     try {
       await addEmployee(form);
       setSuccess(true);
-      setForm({ employee_id: "", name: "", email: "" });
+      setForm({ employee_id: "", full_name: "", email: "" });
       setTimeout(() => setSuccess(false), 5000);
     } catch {
     } finally {
@@ -63,7 +65,7 @@ export default function RegisterEmployeePage() {
   };
 
   const handleReset = () => {
-    setForm({ employee_id: "", name: "", email: "" });
+    setForm({ employee_id: "", full_name: "", email: "" });
     setErrors({});
   };
 
@@ -110,8 +112,8 @@ export default function RegisterEmployeePage() {
                   label="Full Name"
                   placeholder="e.g., John Doe"
                   icon={<UserPlus className="h-4 w-4" />}
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  value={form.full_name}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                   error={errors.name}
                 />
 

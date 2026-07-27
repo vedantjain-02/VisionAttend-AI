@@ -27,7 +27,7 @@ const item = {
 };
 
 export default function RegisterFacePage() {
-  const { allEmployees } = useEmployees();
+  const { allEmployees, registerFace } = useEmployees();
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [samplesCaptured, setSamplesCaptured] = useState(0);
@@ -66,49 +66,56 @@ export default function RegisterFacePage() {
     return () => stopCamera();
   }, [stopCamera]);
 
-  const captureSample = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+  const captureSample = async (): Promise<Blob | null> => {
+    if (!videoRef.current || !canvasRef.current) return null;
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+
+    if (!ctx) return null;
+
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
-    ctx.drawImage(videoRef.current, 0, 0);
-    setSamplesCaptured((prev) => {
-      const next = prev + 1;
-      if (next >= FACE_SAMPLES_REQUIRED) {
-        setTimeout(() => {
-          setSuccess(true);
-          setIsCapturing(false);
-          stopCamera();
-        }, 500);
-      }
-      return next;
-    });
-  }, [stopCamera]);
 
-  const startCapture = () => {
+    ctx.drawImage(videoRef.current, 0, 0);
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, "image/jpeg");
+    });
+  };
+
+  const startCapture = async () => {
     if (!selectedEmployee) {
       setError("Please select an employee first.");
       return;
     }
-    if (!isStreaming) {
-      setError("Please start the camera first.");
-      return;
-    }
+
     setError("");
     setIsCapturing(true);
-    setSamplesCaptured(0);
-    setSuccess(false);
 
-    let count = 0;
-    const interval = setInterval(() => {
-      captureSample();
-      count++;
-      if (count >= FACE_SAMPLES_REQUIRED) {
-        clearInterval(interval);
+    try {
+      const imageBlob = await captureSample();
+
+      if (!imageBlob) {
+        throw new Error("Unable to capture image");
       }
-    }, 400);
+
+      const formData = new FormData();
+      formData.append("image", imageBlob, "face.jpg");
+
+      await registerFace(selectedEmployee, formData);
+
+      setSamplesCaptured(1);
+      setSuccess(true);
+      stopCamera();
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const resetCapture = () => {

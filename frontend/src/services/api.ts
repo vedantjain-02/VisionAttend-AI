@@ -41,7 +41,10 @@ export const employeeService = {
   },
 
   create: async (data: EmployeeFormData) => {
-    const response = await api.post<ApiResponse<Employee>>(API_ENDPOINTS.USERS, data);
+    const response = await api.post<ApiResponse<Employee>>(
+      API_ENDPOINTS.REGISTER_USER,
+      data
+    );
     return response.data;
   },
 
@@ -56,11 +59,16 @@ export const employeeService = {
   },
 
   registerFace: async (id: string, imageData: FormData) => {
-    const response = await api.post<ApiResponse<{ samples_captured: number }>>(
+    const response = await api.post<ApiResponse<any>>(
       API_ENDPOINTS.REGISTER_FACE(id),
       imageData,
-      { headers: { "Content-Type": "multipart/form-data" } }
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
+
     return response.data;
   },
 };
@@ -90,6 +98,19 @@ export const attendanceService = {
       API_ENDPOINTS.ATTENDANCE,
       { params }
     );
+    return response.data;
+  },
+  liveAttendance: async (imageData: FormData) => {
+    const response = await api.post<ApiResponse<any>>(
+      API_ENDPOINTS.LIVE_ATTENDANCE,
+      imageData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
     return response.data;
   },
 };

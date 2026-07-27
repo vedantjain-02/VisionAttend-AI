@@ -83,7 +83,7 @@ export interface PaginatedResponse<T> {
 
 export interface EmployeeFormData {
   employee_id: string;
-  name: string;
+  full_name: string;
   email: string;
 }
 

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from app.models.attendance import Attendance
 from app.models.user import User
 
 
@@ -28,3 +28,27 @@ class UserRepository:
 
     def get_all(self):
         return self.db.query(User).all()
+
+
+    def delete(self, employee_id: str):
+
+        user = (
+            self.db.query(User)
+            .filter(User.employee_id == employee_id)
+            .first()
+        )
+
+        if not user:
+            return None
+
+        # Pehle attendance records delete karo
+        self.db.query(Attendance).filter(
+            Attendance.user_id == user.id
+        ).delete()
+
+        # Fir user delete karo
+        self.db.delete(user)
+
+        self.db.commit()
+
+        return user

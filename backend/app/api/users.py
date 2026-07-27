@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from fastapi import UploadFile, File
 from app.dependencies.database import get_db
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
@@ -45,16 +46,15 @@ def register(
         "message": "Employee created successfully."
     }
 
+
 @router.post("/{employee_id}/register-face")
 def register_face(
     employee_id: str,
+    image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-
     service = FaceRegistrationService(db)
-
-    return service.register_face(employee_id)
-
+    return service.register_face(employee_id, image)
 
 @router.get("")
 def get_users(
@@ -80,4 +80,25 @@ def get_users(
         "page": 1,
         "per_page": len(users),
         "total_pages": 1
+    }
+
+
+@router.delete("/{employee_id}")
+def delete_user(
+    employee_id: str,
+    db: Session = Depends(get_db)
+):
+
+    repository = UserRepository(db)
+
+    user = repository.delete(employee_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found."
+        )
+
+    return {
+        "message": "Employee deleted successfully."
     }

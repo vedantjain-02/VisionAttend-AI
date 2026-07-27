@@ -1,5 +1,5 @@
 "use client";
-import { employeeService, dashboardService} from "@/services/api";
+import { employeeService, dashboardService, attendanceService} from "@/services/api";
 import { useState, useEffect, useCallback } from "react";
 import {
   mockEmployees,
@@ -85,6 +85,14 @@ export function useEmployees() {
     await fetchEmployees();
   };
 
+  const registerFace = async (
+  employeeId: string,
+  formData: FormData
+  ) => {
+    await employeeService.registerFace(employeeId, formData);
+    await fetchEmployees();
+  };
+
   return {
     employees: paginatedEmployees,
     allEmployees: employees,
@@ -97,6 +105,7 @@ export function useEmployees() {
     total: employees.length,
     addEmployee,
     deleteEmployee,
+    registerFace,
     refetch: fetchEmployees,
   };
 }
@@ -129,7 +138,6 @@ export function useTodayAttendance() {
     refetch: fetch,
   };
 }
-
 export function useAttendanceHistory() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,15 +244,38 @@ export function useAttendanceLogs() {
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      await simulateDelay(300);
-      setLogs(mockAttendanceLogs);
+  const fetchLogs = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const response = await attendanceService.getAll();
+
+      setLogs(
+        response.data.map((item: any) => ({
+          id: item.id,
+          employee_id: item.employee_id,
+          employee_name: item.employee_name,
+          timestamp: item.check_in,
+          confidence: item.confidence ?? 1.0,
+          status: "check_in",
+        }))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-    })();
+    }
   }, []);
 
-  return { logs, loading };
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  return {
+    logs,
+    loading,
+    refetch: fetchLogs,
+  };
 }
 
 export function useChartData() {
