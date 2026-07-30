@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time
 
 from app.models.attendance import Attendance
 from app.repositories.attendance_repository import AttendanceRepository
@@ -15,15 +15,23 @@ class AttendanceService:
         attendance = self.repository.already_marked_today(user_id)
 
         if attendance:
-
             return {
                 "message": "Attendance already marked."
             }
 
+        now = datetime.now()
+
+        # 12:00 PM ke baad Late
+        if now.time() >= time(12, 0):
+            status = "Late"
+        else:
+            status = "Present"
+
         attendance = Attendance(
             user_id=user_id,
             date=date.today(),
-            status="Present"
+            status=status,
+            check_in=now
         )
 
         self.repository.create(attendance)

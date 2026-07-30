@@ -37,10 +37,10 @@ export interface RecognitionResult {
 
 export interface DashboardStats {
   total_employees: number;
-  today_attendance: number;
+  absent_today: number;   
   present_today: number;
   recognition_accuracy: number;
-  system_status: "online" | "offline" | "maintenance";
+  system_status: string;
 }
 
 export interface SystemHealth {

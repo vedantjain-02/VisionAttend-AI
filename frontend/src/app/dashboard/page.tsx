@@ -64,7 +64,13 @@ export default function DashboardPage() {
           <>
             <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               <StatisticsCard title="Total Employees" value={stats?.total_employees ?? 0} icon={Users} color="text-accent" trend={{ value: 12, isPositive: true }} />
-              <StatisticsCard title="Today's Attendance" value={stats?.today_attendance ?? 0} icon={UserCheck} color="text-info" subtitle="checked in today" />
+              <StatisticsCard
+                title="Absent Today"
+                value={stats?.absent_today ?? 0}
+                icon={UserCheck}
+                color="text-destructive"
+                subtitle="employees absent"
+              />
               <StatisticsCard title="Present Today" value={stats?.present_today ?? 0} icon={Zap} color="text-success" trend={{ value: 8, isPositive: true }} />
               <StatisticsCard title="Recognition Accuracy" value={`${stats?.recognition_accuracy ?? 0}%`} icon={Target} color="text-warning" />
               <StatisticsCard title="System Status" value={stats?.system_status === "online" ? "Online" : "Offline"} icon={Activity} color={stats?.system_status === "online" ? "text-success" : "text-destructive"} />

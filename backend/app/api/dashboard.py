@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from datetime import date
 from app.database.session import get_db
 from app.models.user import User
 from app.models.attendance import Attendance
+from sqlalchemy import func, extract
+from datetime import date,timedelta, time
 
 router = APIRouter(
     prefix="/dashboard",
@@ -16,18 +17,34 @@ def dashboard_stats(db: Session = Depends(get_db)):
 
     total = db.query(User).count()
 
-    today = db.query(Attendance).count()
-
     present = (
         db.query(Attendance)
-        .filter(Attendance.status == "Present")
+        .filter(
+            Attendance.date == date.today(),
+            Attendance.status == "Present"
+        )
         .count()
     )
 
+    late = (
+        db.query(Attendance)
+        .filter(
+            Attendance.date == date.today(),
+            Attendance.status == "Late"
+        )
+        .count()
+    )
+
+    # Late bhi present hi hai
+    present_today = present + late
+
+    absent = max(total - present_today, 0)
+
     return {
         "total_employees": total,
-        "today_attendance": today,
-        "present_today": present,
+        "present_today": present_today,
+        "late_today": late,
+        "absent_today": absent,
         "recognition_accuracy": 96.5,
         "system_status": "online"
     }
@@ -84,7 +101,11 @@ def today_dashboard(db: Session = Depends(get_db)):
 
     attendance_records = []
 
+    total_late = 0
+
     for attendance, user in records:
+
+        status = attendance.status.lower()
 
         attendance_records.append({
             "id": attendance.id,
@@ -92,14 +113,152 @@ def today_dashboard(db: Session = Depends(get_db)):
             "employee_name": user.full_name,
             "date": str(attendance.date),
             "check_in": attendance.check_in.strftime("%H:%M"),
-            "status": attendance.status.lower(),
+            "status": status,
         })
 
-    total_present = len(records)
+    total_employees = db.query(User).count()
+
+    total_present = sum(
+        1 for attendance, _ in records
+        if attendance.status in ["Present", "Late"]
+    )
+
+    total_late = sum(
+        1 for attendance, _ in records
+        if attendance.status == "Late"
+    )
+
+    total_absent = max(
+        total_employees - total_present,
+        0
+    )
 
     return {
         "total_present": total_present,
-        "total_absent": 0,
-        "total_late": 0,
+        "total_absent": total_absent,
+        "total_late": total_late,
         "records": attendance_records,
     }
+
+
+
+@router.get("/weekly-attendance")
+def weekly_attendance(db: Session = Depends(get_db)):
+
+    total_employees = db.query(User).count()
+
+    result = []
+
+    for i in range(6, -1, -1):
+
+        day = date.today() - timedelta(days=i)
+
+        present = (
+            db.query(Attendance)
+            .filter(
+                Attendance.date == day,
+                Attendance.status == "Present"
+            )
+            .count()
+        )
+
+        late = (
+            db.query(Attendance)
+            .filter(
+                Attendance.date == day,
+                Attendance.status == "Late"
+            )
+            .count()
+        )
+
+        absent = max(total_employees - (present + late), 0)
+
+        result.append({
+            "name": day.strftime("%a"),
+            "present": present,
+            "absent": absent,
+            "late": late
+        })
+
+    return result
+
+
+@router.get("/employee-growth")
+def employee_growth(db: Session = Depends(get_db)):
+
+    result = []
+
+    current_year = date.today().year
+
+    month_names = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ]
+
+    total = 0
+
+    for month in range(1, 13):
+
+        count = (
+            db.query(User)
+            .filter(
+                extract("year", User.created_at) == current_year,
+                extract("month", User.created_at) == month
+            )
+            .count()
+        )
+
+        total += count
+
+        result.append({
+            "name": month_names[month - 1],
+            "employees": total
+        })
+
+    return result
+
+
+@router.get("/monthly-attendance")
+def monthly_attendance(db: Session = Depends(get_db)):
+
+    total_employees = db.query(User).count()
+    year = date.today().year
+
+    months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ]
+
+    result = []
+
+    for month in range(1, 13):
+
+        present = (
+            db.query(Attendance)
+            .filter(
+                extract("year", Attendance.date) == year,
+                extract("month", Attendance.date) == month,
+                Attendance.status.in_(["Present", "Late"])
+            )
+            .count()
+        )
+
+        employees_added = (
+            db.query(User)
+            .filter(
+                extract("year", User.created_at) == year,
+                extract("month", User.created_at) == month
+            )
+            .count()
+        )
+
+        base = total_employees if total_employees > 0 else employees_added
+
+        attendance = round((present / base) * 100, 1) if base > 0 else 0
+
+        result.append({
+            "name": months[month - 1],
+            "attendance": attendance
+        })
+
+    return result

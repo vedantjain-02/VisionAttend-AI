@@ -148,21 +148,45 @@ export function useAttendanceHistory() {
   const perPage = 10;
 
   const fetch = useCallback(async () => {
-    setLoading(true);
-    await simulateDelay();
-    let filtered = [...mockAttendanceRecords];
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.employee_name.toLowerCase().includes(q) ||
-          r.employee_id.toLowerCase().includes(q)
-      );
+    try {
+      setLoading(true);
+
+      const response = await attendanceService.getAll();
+
+      let filtered = response.data.map((item: any) => ({
+        id: item.id,
+        employee_id: item.employee_id,
+        employee_name: item.employee_name,
+        date: item.check_in.split("T")[0],
+        check_in: item.check_in,
+        status: item.status,
+      }));
+
+      if (search) {
+        const q = search.toLowerCase();
+
+        filtered = filtered.filter(
+          (r: any) =>
+            r.employee_name.toLowerCase().includes(q) ||
+            r.employee_id.toLowerCase().includes(q)
+        );
+      }
+
+      if (dateFrom) {
+        filtered = filtered.filter((r: any) => r.date >= dateFrom);
+      }
+
+      if (dateTo) {
+        filtered = filtered.filter((r: any) => r.date <= dateTo);
+      }
+
+      setRecords(filtered);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    if (dateFrom) filtered = filtered.filter((r) => r.date >= dateFrom);
-    if (dateTo) filtered = filtered.filter((r) => r.date <= dateTo);
-    setRecords(filtered);
-    setLoading(false);
   }, [search, dateFrom, dateTo]);
 
   useEffect(() => {
@@ -284,17 +308,37 @@ export function useChartData() {
   const [growthData, setGrowthData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      await simulateDelay(400);
-      setWeeklyData(mockWeeklyChartData);
-      setMonthlyData(mockMonthlyChartData);
-      setGrowthData(mockEmployeeGrowthData);
+  const fetch = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const [weekly, monthly, growth] = await Promise.all([
+        dashboardService.weeklyAttendance(),
+        dashboardService.monthlyAttendance(),
+        dashboardService.employeeGrowth(),
+      ]);
+
+      setWeeklyData(weekly);
+      setMonthlyData(monthly);
+      setGrowthData(growth);
+
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
-    })();
+    }
   }, []);
 
-  return { weeklyData, monthlyData, growthData, loading };
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return {
+    weeklyData,
+    monthlyData,
+    growthData,
+    loading,
+  };
 }
 
 export function useSettings() {

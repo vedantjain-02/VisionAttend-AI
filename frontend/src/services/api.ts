@@ -154,6 +154,21 @@ export const dashboardService = {
     const response = await api.get("/dashboard/system-health");
     return response.data;
   },
+
+  weeklyAttendance: async () => {
+    const response = await api.get("/dashboard/weekly-attendance");
+    return response.data;
+  },
+
+  employeeGrowth: async () => {
+    const response = await api.get("/dashboard/employee-growth");
+    return response.data;
+  },
+
+  monthlyAttendance: async () => {
+    const response = await api.get("/dashboard/monthly-attendance");
+    return response.data;
+  },
 };
 
 export default api;

@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { TableLoader } from "@/components/shared/Spinner";
 import { useAttendanceHistory } from "@/hooks/useData";
-import { formatDate, getStatusColor } from "@/lib/utils";
+import { formatDate,formatTime, getStatusColor } from "@/lib/utils";
 import {
   Search,
   Download,
@@ -126,10 +126,15 @@ export default function AttendanceHistoryPage() {
                           <td className="py-3 px-4 text-foreground font-medium">{record.employee_name}</td>
                           <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{record.employee_id}</td>
                           <td className="py-3 px-4 text-muted-foreground">{formatDate(record.date)}</td>
-                          <td className="py-3 px-4 text-muted-foreground">{record.check_in}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{formatTime(record.check_in)}</td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
-                              {record.status}
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize ${getStatusColor(
+                                record.status.toLowerCase()
+                              )}`}
+                            >
+                              {record.status.charAt(0).toUpperCase() +
+                                record.status.slice(1).toLowerCase()}
                             </span>
                           </td>
                         </tr>
