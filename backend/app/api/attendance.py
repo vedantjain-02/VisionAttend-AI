@@ -8,6 +8,7 @@ from app.recognition.recognize import FaceRecognizer
 import cv2
 from fastapi import UploadFile, File
 import numpy as np
+from app.models.notification import Notification
 
 
 router = APIRouter(
@@ -57,13 +58,53 @@ async def live_attendance(
     user = recognizer.recognize(frame)
 
     if user is None:
+
+        notification = Notification(
+            title="Unknown Face",
+            message="Unknown person tried to mark attendance.",
+            type="error"
+        )
+
+        db.add(notification)
+        db.commit()
+
         return {
             "status": "error",
             "message": "Face not recognized",
             "data": None
         }
 
-    attendance_service.mark_attendance(user.id)
+    result = attendance_service.mark_attendance(user.id)
+
+    attendance = result["attendance"]
+    already_marked = result["already_marked"]
+
+    if already_marked:
+        notification = Notification(
+            title="Attendance Already Marked",
+            message=f"{user.full_name} tried to mark attendance again.",
+            type="info"
+        )
+
+    elif attendance.status == "Late":
+
+        notification = Notification(
+            title="Late Arrival",
+            message=f"{user.full_name} arrived late.",
+            type="warning"
+        )
+
+    else:
+
+        notification = Notification(
+            title="Attendance Marked",
+            message=f"{user.full_name} checked in successfully.",
+            type="success"
+        )
+
+    db.add(notification)
+    db.commit()
+
 
     return {
         "status": "success",

@@ -20,6 +20,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 from app.models.user import User
 from app.models.attendance import Attendance
+from app.models.notification import Notification
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 

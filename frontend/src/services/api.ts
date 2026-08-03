@@ -171,4 +171,11 @@ export const dashboardService = {
   },
 };
 
+export const notificationService = {
+  getAll: async () => {
+    const response = await api.get("/notifications");
+    return response.data;
+  },
+};
+
 export default api;

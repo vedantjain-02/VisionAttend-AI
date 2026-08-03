@@ -1,5 +1,5 @@
 "use client";
-import { employeeService, dashboardService, attendanceService} from "@/services/api";
+import { employeeService, dashboardService, attendanceService, notificationService} from "@/services/api";
 import { useState, useEffect, useCallback } from "react";
 import {
   mockEmployees,
@@ -362,4 +362,35 @@ export function useSettings() {
   };
 
   return { settings, loading, updateSettings, refetch: fetch };
+}
+
+
+export function useNotifications() {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const data = await notificationService.getAll();
+
+      setNotifications(data);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return {
+    notifications,
+    loading,
+    refetch: fetch,
+  };
 }

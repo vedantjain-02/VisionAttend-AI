@@ -16,12 +16,12 @@ class AttendanceService:
 
         if attendance:
             return {
-                "message": "Attendance already marked."
+                "attendance": attendance,
+                "already_marked": True
             }
 
         now = datetime.now()
 
-        # 12:00 PM ke baad Late
         if now.time() >= time(12, 0):
             status = "Late"
         else:
@@ -37,7 +37,8 @@ class AttendanceService:
         self.repository.create(attendance)
 
         return {
-            "message": "Attendance marked successfully."
+            "attendance": attendance,
+            "already_marked": False
         }
 
 

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSidebarContext } from "@/context/SidebarContext";
 import { cn } from "@/lib/utils";
-import { mockNotifications } from "@/services/mockData";
+import { useNotifications } from "@/hooks/useData";
 import {
   Search,
   Bell,
@@ -22,16 +22,41 @@ export default function Navbar() {
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const {
+    notifications,
+    refetch,
+  } = useNotifications();
+
+  const unreadCount = notifications.filter(
+    (n: any) => !n.is_read
+  ).length;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(e.target as Node)
+      ) {
+        setNotifOpen(false);
+      }
+
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
+        setProfileOpen(false);
+      }
     };
+
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
   }, []);
+
+  
+
 
   return (
     <header
@@ -60,7 +85,11 @@ export default function Navbar() {
       <div className="flex items-center gap-2">
         <div ref={notifRef} className="relative">
           <button
-            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
+            onClick={() => {
+                refetch(); // Latest notifications fetch karega
+                setNotifOpen(!notifOpen);
+                setProfileOpen(false);
+              }}
             className="relative h-9 w-9 rounded-lg flex items-center justify-center text-muted hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <Bell className="h-5 w-5" />
@@ -80,15 +109,36 @@ export default function Navbar() {
                 </button>
               </div>
               <div className="max-h-72 overflow-y-auto">
-                {mockNotifications.map((n) => (
-                  <div key={n.id} className={cn("px-4 py-3 border-b border-card-border/50 hover:bg-white/3 transition-colors", !n.read && "bg-accent/5")}>
-                    <p className="text-sm font-medium text-foreground">{n.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                    <p className="text-[10px] text-muted mt-1">
-                      {new Date(n.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-sm">
+                    No notifications
                   </div>
-                ))}
+                ) : (
+                  notifications.map((n: any) => (
+                    <div
+                      key={n.id}
+                      className={cn(
+                        "px-4 py-3 border-b border-card-border/50 hover:bg-white/3 transition-colors",
+                        !n.is_read && "bg-accent/5"
+                      )}
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        {n.title}
+                      </p>
+
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {n.message}
+                      </p>
+
+                      <p className="text-[10px] text-muted mt-1">
+                        {new Date(n.created_at).toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
